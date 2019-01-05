@@ -1,0 +1,74 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: ATH TransitGateway Stack
+
+Parameters:
+  VpcId:
+    Type : 'AWS::EC2::VPC::Id'
+    Description : VpcId of your existing Virtual Private Cloud (VPC)
+    ConstraintDescription : >-
+      must be the VPC Id of an existing Virtual Private Cloud
+  Subnets:
+    Type: 'List<AWS::EC2::Subnet::Id>'
+    Description: The list of SubnetIds in your Virtual Private Cloud (VPC)
+    ConstraintDescription: >-
+      must be a list of at least two existing subnets associated with at least
+      two different availability zones. They should be residing in the selected
+      Virtual Private Cloud.
+  Region:
+    Type: String
+    Default: "us-east-1"
+    Description: Region
+
+
+Resources:
+ TransitGateway:
+  Type: "AWS::EC2::TransitGateway"
+  Properties:
+    AmazonSideAsn: 65000
+    Description: "TGW Route Integration "
+    AutoAcceptSharedAttachments: "disable"
+    DefaultRouteTableAssociation: "enable"
+    DnsSupport: "enable"
+    VpnEcmpSupport: "enable"
+    Tags:
+      - Key: Name
+        Value: !Join ["-", ["ath", "transit", "gateway", !Ref 'AWS::Region']]
+      - Key: Region
+        Value: !Ref 'AWS::Region'
+ TransitGatewayAttachment:
+  Type: "AWS::EC2::TransitGatewayAttachment"
+  Properties:
+    SubnetIds: !Ref Subnets
+    TransitGatewayId: !Ref TransitGateway
+    VpcId: !Ref 'VpcId'
+
+ TransitGatewayRouteTable:
+  Type: "AWS::EC2::TransitGatewayRouteTable"
+  Properties:
+    Tags:
+        - Key: Name
+          Value: !Join ["-", ["ath", !Ref 'VpcId', "RouteTable", "TransitGateway", !Ref 'AWS::Region']]
+
+        - Key: Region
+          Value: !Ref 'AWS::Region'
+    TransitGatewayId: !Ref TransitGateway
+
+
+ TransitGatewayRouteTableAssociation:
+   Type: "AWS::EC2::TransitGatewayRouteTableAssociation"
+   Properties:
+    TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+    TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+ TransitGatewayRouteTablePropagation:
+   Type: "AWS::EC2::TransitGatewayRouteTablePropagation"
+   Properties:
+    TransitGatewayAttachmentId: !Ref TransitGatewayAttachment
+    TransitGatewayRouteTableId: !Ref TransitGatewayRouteTable
+
+Outputs:
+ Gateway:
+  Description: " The Transit gateway to VPC"
+  Value: !Ref TransitGateway
+  Export:
+    Name: TransitGateway
