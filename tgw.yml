@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: ATH TransitGateway Stack
+Description: Sample TransitGateway Stack
 
 Parameters:
   VpcId:
